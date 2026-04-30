@@ -1,8 +1,12 @@
 {
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "morgan": "^1.10.1"
   },
   "scripts": {
     "start": "node --watch app.js"
+  },
+  "devDependencies": {
+    "prettier": "3.8.3"
   }
 }
