@@ -3,7 +3,34 @@ const fs = require("fs");
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
 );
+exports.checkId = (req, res, next, val) => {
+  const tour = tours.find((tour) => {
+    return +tour.id === +val;
+  });
+  if (!tour) {
+    return res.status(404).json({
+      // Changed from 400 to 404
+      status: "fail",
+      message: `Tour with ID ${val} does not exist`,
+    });
+  }
+  req.foundedTour = tour;
+  console.log("check");
+  next();
+};
+exports.checkBody = (req, res, next) => {
+  const { body } = req;
+  // Quick validation for most critical fields
+  if (!body.name || !body.price || !body.difficulty) {
+    return res.status(400).json({
+      status: "fail",
+      message:
+        "Missing required fields: name, price, and difficulty are required",
+    });
+  }
 
+  next();
+};
 exports.getAllTours = (req, res) => {
   console.log(req.requestTime);
   res.status(200).json({
@@ -31,55 +58,38 @@ exports.addTour = (req, res) => {
   );
 };
 exports.updateTour = (req, res) => {
-  const { id } = req.params;
   const updates = req.body;
-  const tour = tours.find((tour) => {
-    return +tour.id === +id;
-  });
+  const tour = req.foundedTour;
   const updatedTour = { ...tour, ...updates };
-  if (tour) {
-    res.status(200).json({
-      status: "success",
-      data: { updatedTour },
-    });
-  } else {
-    res.status(400).json({
-      status: "fail",
-      data: { message: "this tour not exist" },
-    });
-  }
+  res.status(200).json({
+    status: "success",
+    data: { updatedTour },
+  });
 };
 exports.getTour = (req, res) => {
-  const { id } = req.params;
-  const tour = tours.find((tour) => {
-    return +tour.id === +id;
+  const tour = req.foundedTour;
+  res.status(200).json({
+    status: "success",
+    data: tour,
   });
-  if (tour) {
-    res.status(200).json({
-      status: "success",
-      data: { tours },
-    });
-  } else {
-    res.status(400).json({
-      status: "fail",
-      data: { message: "this tour not exist" },
-    });
-  }
 };
 exports.deleteTour = (req, res) => {
   const { id } = req.params;
-  const tour = tours.find((tour) => {
-    return +tour.id === +id;
+  const filteredTours = tours.filter((tour) => {
+    return +tour.id !== +id;
   });
-  if (tour) {
-    res.status(204).json({
-      status: "success",
-      data: null,
-    });
-  } else {
-    res.status(400).json({
-      status: "fail",
-      data: { message: "this tour not exist" },
-    });
-  }
+  fs.writeFile(
+    `${__dirname}/dev-data/data/tours-simple.json`,
+    JSON.stringify(tours),
+    (err) => {
+      if (err) {
+        res.status(400).json({ message: "something wrong happens" });
+      } else {
+        res.status(200).json({
+          status: "success",
+          data: filteredTours,
+        });
+      }
+    },
+  );
 };
